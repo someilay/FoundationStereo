@@ -4,3 +4,11 @@ output/*
 weight/
 __pycache__
 DATA/*
+.vscode
+.venv
+.env
+stubs
+stubs_src
+proto
+.cursorignore
+pyrightconfig.json

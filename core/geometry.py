@@ -31,11 +31,20 @@ class Combined_Geo_Encoding_Volume:
         self.geo_volume_pyramid.append(geo_volume)
         self.init_corr_pyramid.append(init_corr)
         for i in range(self.num_levels-1):
-            geo_volume = F.avg_pool2d(geo_volume, [1,2], stride=[1,2])
+            # F.avg_pool2d(x, [1,2], stride=[1,2]) triggers CUDNN_STATUS_NOT_SUPPORTED when the
+            # N dimension exceeds 65535 (documented cuDNN v7 API limit). At 1888x1056 input,
+            # N = b*h*w = 124608, which exceeds the limit.
+            # Reshape+mean is numerically identical and exports as ReduceMean in ONNX,
+            # which TensorRT handles with its own kernel, bypassing cuDNN pooling entirely.
+            # geo_volume = F.avg_pool2d(geo_volume, [1,2], stride=[1,2])
+            B, C, H, W = geo_volume.shape
+            geo_volume = geo_volume.reshape(B, C, H, W // 2, 2).mean(dim=-1)
             self.geo_volume_pyramid.append(geo_volume)
 
         for i in range(self.num_levels-1):
-            init_corr = F.avg_pool2d(init_corr, [1,2], stride=[1,2])
+            # init_corr = F.avg_pool2d(init_corr, [1,2], stride=[1,2])
+            B, C, H, W = init_corr.shape
+            init_corr = init_corr.reshape(B, C, H, W // 2, 2).mean(dim=-1)
             self.init_corr_pyramid.append(init_corr)
 
 

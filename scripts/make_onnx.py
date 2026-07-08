@@ -13,8 +13,7 @@ class FoundationStereoOnnx(FoundationStereo):
     @torch.no_grad()
     def forward(self, left, right):
         """ Removes extra outputs and hyper-parameters """
-        with torch.amp.autocast('cuda', enabled=True):
-            disp = FoundationStereo.forward(self, left, right, iters=self.args.valid_iters, test_mode=True)
+        disp = FoundationStereo.forward(self, left, right, iters=self.args.valid_iters, test_mode=True)
         return disp
 
 
@@ -37,6 +36,7 @@ if __name__ == '__main__':
       cfg[k] = args.__dict__[k]
     if 'vit_size' not in cfg:
       cfg['vit_size'] = 'vitl'
+    cfg['mixed_precision'] = False  # disable internal autocast to get a clean FP32 ONNX
     args = OmegaConf.create(cfg)
     logging.info(f"args:\n{args}")
     logging.info(f"Using pretrained model from {ckpt_dir}")
